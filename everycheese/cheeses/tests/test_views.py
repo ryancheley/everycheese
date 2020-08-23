@@ -3,9 +3,9 @@ from pytest_django.asserts import assertContains
 
 from django.urls import reverse
 
-from .factories import CheeseFactory, UserFactory
+from .factories import CheeseFactory, UserFactory, cheese
 from ..models import Cheese
-from ..views import CheeseListView, CheeseDetailView, CheeseCreateView
+from ..views import CheeseListView, CheeseDetailView, CheeseCreateView, CheeseUpdateView
 
 pytestmark = pytest.mark.django_db
 
@@ -20,8 +20,7 @@ def test_good_cheese_list_view_expanded(rf):
     response = callable_obj(request)
     assertContains(response, 'Cheese List')
 
-def test_good_cheese_detail_view(rf):
-    cheese = CheeseFactory()
+def test_good_cheese_detail_view(rf, cheese):
     url = reverse("cheeses:detail", kwargs={'slug': cheese.slug})
     request = rf.get(url)
     callable_obj = CheeseDetailView.as_view()
@@ -42,8 +41,7 @@ def test_cheese_list_contains_2_cheeses(rf):
     assertContains(response, cheese1.name)
     assertContains(response, cheese2.name)    
 
-def test_detail_contains_cheese_data(rf):
-    cheese = CheeseFactory()
+def test_detail_contains_cheese_data(rf, cheese):
     url = reverse("cheeses:detail", kwargs={'slug': cheese.slug})
     request = rf.get(url)
     callable_obj = CheeseDetailView.as_view()
@@ -67,3 +65,27 @@ def test_cheese_create_form_valid(client, user):
     assert cheese.firmness == form_data['firmness']
     assert cheese.country_of_origin == form_data['country_of_origin']
     assert cheese.creator == user
+
+def test_cheese_create_correct_title(client, user):
+    client.force_login(user)
+    response = client.get(reverse("cheeses:create"))
+    assertContains(response, "Add Cheese")
+
+def test_good_cheese_update_view(client, user, cheese):
+    client.force_login(user)
+    url = reverse("cheeses:update", kwargs={'slug': cheese.slug})
+    response = client.get(url)
+    assertContains(response, "Update Cheese")
+
+def test_good_cheese_update(client, user, cheese):
+    client.force_login(user)
+    form_data = {
+        "name": cheese.name,
+        "description": cheese.description,
+        "firmnness": cheese.firmness
+    }
+    url = reverse("cheeses:update", kwargs={"slug": cheese.slug})
+    response = client.post(url, form_data)
+
+    cheese.refresh_from_db()
+    assert cheese.description == form_data["description"]

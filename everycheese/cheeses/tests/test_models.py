@@ -4,7 +4,7 @@ import pytest
 
 pytestmark = pytest.mark.django_db
 
-from .factories import CheeseFactory
+from .factories import CheeseFactory, cheese
 from ..models import Cheese
 
 def test__str__():
